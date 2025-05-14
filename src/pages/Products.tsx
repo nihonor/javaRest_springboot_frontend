@@ -3,6 +3,7 @@ import type { Product } from "../types/Product";
 import { productService } from "../services/productService";
 import EditProductModal from "../components/EditProductModal";
 import NewProductModal from "../components/NewProductModal";
+import { Button } from "@radix-ui/themes";
 
 const Products: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
