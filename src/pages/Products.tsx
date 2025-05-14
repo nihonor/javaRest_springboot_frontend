@@ -21,9 +21,15 @@ const Products: React.FC = () => {
         currentPage,
         pageSize
       );
-      console.log("API Response:", response);
+      console.log("Full API Response:", response);
+      console.log("Current Page:", currentPage);
+      console.log("Page Size:", pageSize);
+      console.log("Total Elements:", response.page?.totalElements);
+      console.log("Total Pages:", response.page?.totalPages);
+      console.log("Content Length:", response.content?.length);
+
       setProducts(response.content || []);
-      setTotal(response.totalElements || 0);
+      setTotal(response.page?.totalElements || 0);
     } catch (error) {
       console.error("Error fetching products:", error);
       alert("Failed to fetch products");

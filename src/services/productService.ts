@@ -5,8 +5,10 @@ const API_URL = 'http://localhost:8080/api/products';
 
 export const productService = {
     // Get paginated products
-    getPagedProducts: async (page: number = 0, size: number = 5) => {
+    getPagedProducts: async (page: number = 0, size: number = 3) => {
+        console.log('Requesting page:', page, 'size:', size);
         const response = await axios.get(`${API_URL}/paged?page=${page}&size=${size}`);
+        console.log('Raw API Response:', response.data);
         return response.data;
     },
 
