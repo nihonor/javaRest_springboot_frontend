@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from "react";
 import type { Product } from "../types/Product";
 import { productService } from "../services/productService";
+import EditProductModal from "../components/EditProductModal";
+import NewProductModal from "../components/NewProductModal";
 
 const Products: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
-  const [modalVisible, setModalVisible] = useState(false);
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [newModalVisible, setNewModalVisible] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [formData, setFormData] = useState<Partial<Product>>({});
   const [currentPage, setCurrentPage] = useState(0);
-  const [pageSize, setPageSize] = useState(5);
+  const [pageSize, setPageSize] = useState(3);
   const [total, setTotal] = useState(0);
 
   const fetchProducts = async () => {
@@ -36,15 +38,12 @@ const Products: React.FC = () => {
   }, [currentPage, pageSize]);
 
   const handleCreate = () => {
-    setEditingProduct(null);
-    setFormData({});
-    setModalVisible(true);
+    setNewModalVisible(true);
   };
 
-  const handleEdit = (record: Product) => {
-    setEditingProduct(record);
-    setFormData(record);
-    setModalVisible(true);
+  const handleEdit = (product: Product) => {
+    setEditingProduct(product);
+    setEditModalVisible(true);
   };
 
   const handleDelete = async (id: number) => {
@@ -63,40 +62,28 @@ const Products: React.FC = () => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleUpdateProduct = async (updatedProduct: Partial<Product>) => {
+    if (!editingProduct) return;
     try {
-      if (editingProduct) {
-        await productService.updateProduct(editingProduct.id, {
-          ...editingProduct,
-          ...formData,
-        });
-        alert("Product updated successfully");
-      } else {
-        await productService.createProduct(formData as Omit<Product, "id">);
-        alert("Product created successfully");
-      }
-      setModalVisible(false);
+      await productService.updateProduct(editingProduct.id, {
+        ...editingProduct,
+        ...updatedProduct,
+      });
+      alert("Product updated successfully");
       fetchProducts();
     } catch (error) {
-      alert("Failed to save product");
+      alert("Failed to update product");
     }
   };
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: name === "price" ? Number(value) : value,
-    }));
-  };
-
-  const handleCancel = () => {
-    setModalVisible(false);
-    setEditingProduct(null);
-    setFormData({});
+  const handleCreateProduct = async (newProduct: Omit<Product, "id">) => {
+    try {
+      await productService.createProduct(newProduct);
+      alert("Product created successfully");
+      fetchProducts();
+    } catch (error) {
+      alert("Failed to create product");
+    }
   };
 
   const totalPages = Math.ceil(total / pageSize) || 1;
@@ -134,9 +121,6 @@ const Products: React.FC = () => {
                     Price
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Description
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
@@ -155,9 +139,6 @@ const Products: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       ${product.price}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
-                      {product.description}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <div className="flex space-x-3">
@@ -193,9 +174,9 @@ const Products: React.FC = () => {
             }}
             className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
           >
-            <option value="5">5 per page</option>
-            <option value="10">10 per page</option>
-            <option value="20">20 per page</option>
+            <option value="3">3 per page</option>
+            <option value="6">6 per page</option>
+            <option value="9">9 per page</option>
           </select>
         </div>
         <div className="flex items-center space-x-2">
@@ -221,73 +202,21 @@ const Products: React.FC = () => {
         </div>
       </div>
 
-      {modalVisible && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md transform transition-all">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-800">
-                {editingProduct ? "Edit Product" : "Create Product"}
-              </h2>
-            </div>
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Name
-                </label>
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.name || ""}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Price
-                </label>
-                <input
-                  type="number"
-                  name="price"
-                  value={formData.price || ""}
-                  onChange={handleInputChange}
-                  required
-                  min="0"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Description
-                </label>
-                <textarea
-                  name="description"
-                  value={formData.description || ""}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                  rows={3}
-                />
-              </div>
-              <div className="flex justify-end space-x-3 pt-4">
-                <button
-                  type="button"
-                  onClick={handleCancel}
-                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                >
-                  Save
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <EditProductModal
+        isVisible={editModalVisible}
+        product={editingProduct}
+        onClose={() => {
+          setEditModalVisible(false);
+          setEditingProduct(null);
+        }}
+        onSubmit={handleUpdateProduct}
+      />
+
+      <NewProductModal
+        isVisible={newModalVisible}
+        onClose={() => setNewModalVisible(false)}
+        onSubmit={handleCreateProduct}
+      />
     </div>
   );
 };
