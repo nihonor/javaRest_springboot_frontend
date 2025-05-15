@@ -5,6 +5,12 @@ import EditProductModal from "../components/EditProductModal";
 import NewProductModal from "../components/NewProductModal";
 import { Button } from "@radix-ui/themes";
 
+const sortableColumns = [
+  { key: "id", label: "ID" },
+  { key: "name", label: "Name" },
+  { key: "price", label: "Price" },
+];
+
 const Products: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
@@ -14,13 +20,17 @@ const Products: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(0);
   const [pageSize, setPageSize] = useState(3);
   const [total, setTotal] = useState(0);
+  const [sortColumn, setSortColumn] = useState("id");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
   const fetchProducts = async () => {
     setLoading(true);
     try {
+      const sort = `${sortColumn},${sortDirection}`;
       const response = await productService.getPagedProducts(
         currentPage,
-        pageSize
+        pageSize,
+        sort
       );
       console.log("Full API Response:", response);
       console.log("Current Page:", currentPage);
@@ -42,7 +52,18 @@ const Products: React.FC = () => {
 
   useEffect(() => {
     fetchProducts();
-  }, [currentPage, pageSize]);
+    // eslint-disable-next-line
+  }, [currentPage, pageSize, sortColumn, sortDirection]);
+
+  const handleSort = (column: string) => {
+    if (sortColumn === column) {
+      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortColumn(column);
+      setSortDirection("asc");
+    }
+    setCurrentPage(0);
+  };
 
   const handleCreate = () => {
     setNewModalVisible(true);
@@ -100,7 +121,7 @@ const Products: React.FC = () => {
       <div className="flex justify-between items-center mb-8">
         <h2 className="text-2xl font-bold text-gray-800">Products</h2>
         <button
-          onClick={handleCreate}
+          onClick={() => setNewModalVisible(true)}
           className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center transition-colors duration-200 shadow-sm"
         >
           <span className="mr-2">+</span>
@@ -118,15 +139,26 @@ const Products: React.FC = () => {
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    ID
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Name
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Price
-                  </th>
+                  {sortableColumns.map((col) => (
+                    <th
+                      key={col.key}
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none hover:text-indigo-600 transition-colors duration-200 group"
+                      onClick={() => handleSort(col.key)}
+                    >
+                      <div className="flex items-center">
+                        {col.label}
+                        {sortColumn === col.key ? (
+                          <span className="ml-1 text-indigo-600">
+                            {sortDirection === "asc" ? "▲" : "▼"}
+                          </span>
+                        ) : (
+                          <span className="ml-1 text-gray-300 group-hover:text-gray-400">
+                            ↕
+                          </span>
+                        )}
+                      </div>
+                    </th>
+                  ))}
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
                   </th>
@@ -187,25 +219,27 @@ const Products: React.FC = () => {
           </select>
         </div>
         <div className="flex items-center space-x-2">
-          <button
+          <Button
+            variant="soft"
+            color="gray"
             onClick={() => setCurrentPage((prev) => Math.max(0, prev - 1))}
             disabled={currentPage === 0}
-            className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
           >
             Previous
-          </button>
+          </Button>
           <span className="px-4 py-2 text-sm text-gray-700">
             Page {currentPage + 1} of {totalPages}
           </span>
-          <button
+          <Button
+            variant="soft"
+            color="gray"
             onClick={() =>
               setCurrentPage((prev) => Math.min(totalPages - 1, prev + 1))
             }
             disabled={currentPage >= totalPages - 1}
-            className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
           >
             Next
-          </button>
+          </Button>
         </div>
       </div>
 
